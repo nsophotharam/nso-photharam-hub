@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ศูนย์รวมแอป NSO Photharam | ระบบจัดการฐานข้อมูล</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        function handleLogoError(imgEl) {
+            const secondaryUrl = "https://img2.pic.in.th/-68700400efcdc844d.png";
+            if (!imgEl.getAttribute('data-tried-secondary')) {
+                imgEl.setAttribute('data-tried-secondary', 'true');
+                imgEl.src = secondaryUrl;
+            } else {
+                imgEl.style.display = 'none';
+                const fallbackIcon = document.getElementById('logo-fallback-icon');
+                if (fallbackIcon) fallbackIcon.classList.remove('hidden');
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; }
+        .app-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .app-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); }
+        .marquee-container { overflow: hidden; white-space: nowrap; width: 100%; }
+        .marquee-content { display: inline-block; padding-left: 100%; animation: marquee 30s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        @keyframes blinker { 50% { opacity: 0; } }
+        .blink-text { animation: blinker 1.5s linear infinite; }
+        .icon-select.selected { border: 2px solid #db2777; background-color: #fdf2f8; }
+        .color-select.selected { outline: 3px solid #db2777; outline-offset: 2px; }
+        .badge-select.selected { background-color: #db2777; color: white; border-color: #db2777; }
+        .category-tab.active { background-color: #db2777; color: white; border-color: #db2777; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-pink-600 via-rose-500 to-orange-500 text-white shadow-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-15">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" class="w-full h-full object-cover"><path fill="#ffffff" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,250.7C960,235,1056,181,1152,165.3C1248,149,1344,171,1392,181.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
+        </div>
+        <div class="max-w-6xl mx-auto px-4 py-8 md:py-12 flex flex-col md:flex-row justify-between items-center relative z-10 text-center md:text-left">
+            <div class="flex flex-col md:flex-row items-center md:items-start">
+                <div class="w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white/40 shadow-2xl mb-4 md:mb-0 md:mr-6 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+                    <img id="main-header-logo"
+                         src="https://img1.pic.in.th/images/snapedit_1764993069127.png" 
+                         alt="NSO Logo" 
+                         class="w-full h-full object-cover"
+                         onerror="handleLogoError(this)">
+                    <div id="logo-fallback-icon" class="hidden flex flex-col items-center justify-center text-pink-600 font-bold">
+                        <i class="fa-solid fa-user-nurse text-4xl"></i>
+                        <span class="text-[10px] tracking-tighter mt-0.5">NSO</span>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-5xl font-extrabold mb-2 drop-shadow-lg tracking-tight">ศูนย์รวมแอป NSO Photharam</h1>
+                    <p class="text-pink-50 text-lg md:text-xl font-medium italic opacity-90">"ทางลัดงานพยาบาล จัดการข้อมูลครบ จบในที่เดียว"</p>
+                </div>
+            </div>
+            <div class="bg-black/20 backdrop-blur-lg border border-white/20 px-8 py-4 rounded-2xl shadow-2xl mt-6 md:mt-0 min-w-[220px]">
+                <div id="real-time-clock" class="text-3xl font-bold tracking-widest text-white">--:--:--</div>
+                <div id="real-time-date" class="text-sm mt-1 text-pink-100 font-light">กำลังโหลด...</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl mx-auto px-4 py-8 w-full">
+        <!-- Announcements -->
+        <div class="bg-amber-50 border-l-4 border-orange-500 p-3 mb-10 rounded-xl shadow-sm flex items-center overflow-hidden relative">
+            <div class="flex-shrink-0 z-10 bg-amber-50 pr-4 font-bold text-orange-900 flex items-center">
+                <i class="fa-solid fa-bullhorn mr-2 animate-bounce"></i> ประกาศ :
+            </div>
+            <div class="marquee-container flex-grow">
+                <div id="marquee-text" class="marquee-content text-sm text-orange-800 font-semibold">
+                    กลุ่มการพยาบาล รพ.โพธาราม ยินดีต้อนรับ กำลังโหลดข้อมูล...
+                </div>
+            </div>
+            <div class="flex-shrink-0 z-10 bg-amber-50 pl-4 border-l border-orange-200 ml-2">
+                <button onclick="openHistoryModal()" class="text-xs text-orange-700 hover:text-orange-900 font-bold underline px-2 py-1 rounded hover:bg-orange-100 transition shadow-sm">
+                    <i class="fa-solid fa-list-ul mr-1"></i> ดูทั้งหมด
+                </button>
+            </div>
+        </div>
+
+        <!-- Search & Admin Toolbar -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div class="relative w-full md:w-96">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
+                <input type="text" id="app-search" onkeyup="filterApps()" placeholder="ค้นชื่อแอป (เช่น สถานการณ์เตียง, เวรพยาบาล)..." class="w-full pl-10 pr-4 py-3 bg-white border-2 border-slate-100 rounded-2xl shadow-sm outline-none focus:border-pink-500 transition">
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <button onclick="toggleLineModal()" class="w-full sm:w-auto bg-green-500 text-white px-6 py-3 rounded-2xl hover:bg-green-600 transition flex items-center justify-center shadow-lg active:scale-95 font-bold text-sm">
+                    <i class="fa-brands fa-line mr-2 text-xl"></i> สร้างประกาศ LINE
+                </button>
+                <button onclick="openAdminModal()" class="w-full sm:w-auto bg-slate-800 text-white px-6 py-3 rounded-2xl hover:bg-slate-900 transition flex items-center justify-center shadow-lg active:scale-95 font-bold text-sm">
+                    <i class="fa-solid fa-database mr-2"></i> จัดการฐานข้อมูล
+                </button>
+            </div>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="flex flex-wrap gap-2 mb-8 justify-center md:justify-start" id="category-filter-area">
+            <button onclick="filterByCategory('all', this)" class="category-tab active px-5 py-2 rounded-full border-2 border-slate-200 text-sm font-bold transition shadow-sm">ทั้งหมด</button>
+            <button onclick="filterByCategory('งานบริหาร', this)" class="category-tab px-5 py-2 rounded-full border-2 border-slate-200 text-sm font-bold transition shadow-sm">งานบริหาร</button>
+            <button onclick="filterByCategory('งานคลินิก', this)" class="category-tab px-5 py-2 rounded-full border-2 border-slate-200 text-sm font-bold transition shadow-sm">งานคลินิก</button>
+            <button onclick="filterByCategory('Productivity', this)" class="category-tab px-5 py-2 rounded-full border-2 border-slate-200 text-sm font-bold transition shadow-sm">Productivity/สถานการณ์เตียง</button>
+            <button onclick="filterByCategory('แบบฟอร์ม', this)" class="category-tab px-5 py-2 rounded-full border-2 border-slate-200 text-sm font-bold transition shadow-sm">แบบฟอร์ม</button>
+        </div>
+
+        <!-- Main App Grid -->
+        <div id="app-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            <div class="col-span-full flex flex-col items-center justify-center py-20 text-pink-500">
+                <i class="fa-solid fa-circle-notch fa-spin text-5xl mb-4"></i>
+                <p class="font-medium text-slate-500">กำลังเชื่อมต่อฐานข้อมูล...</p>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <section class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+            <h2 class="text-2xl font-bold text-slate-800 mb-8 flex items-center">
+                <i class="fa-solid fa-circle-question text-pink-500 mr-3 text-3xl"></i> ถาม-ตอบ ข้อสงสัย (FAQ)
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <h3 class="font-bold text-pink-600 mb-2"><i class="fa-brands fa-line mr-1"></i> กดจาก LINE แล้วแอปค้าง/ล็อกอินไม่ได้?</h3>
+                    <p class="text-sm text-slate-600">เป็นเพราะเบราว์เซอร์ของแอป LINE บล็อกระบบของ Google ครับ <b>วิธีแก้:</b> ให้สังเกตเมนู <b>"จุด 3 จุด"</b> (อยู่บริเวณ <b>มุมขวาบน หรือ มุมขวาล่าง</b>) แล้วเลือก <span class="bg-white px-2 py-1 rounded text-xs border shadow-sm">เปิดในเบราว์เซอร์เริ่มต้น</span> หรือ <span class="bg-white px-2 py-1 rounded text-xs border shadow-sm">เปิดใน Safari</span> ครับ</p>
+                </div>
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <h3 class="font-bold text-pink-600 mb-2"><i class="fa-solid fa-user-lock mr-1"></i> ทำไมต้องล็อกอิน Google Account?</h3>
+                    <p class="text-sm text-slate-600">แอปงานพยาบาล (เช่น <b>Productivity หรือ สถานการณ์เตียง</b>) พัฒนาผ่านระบบความปลอดภัยของ Google จึงจำเป็นต้องยืนยันตัวตนในครั้งแรกเท่านั้น เพื่อความปลอดภัยของข้อมูลครับ</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- In-App Browser Warning Modal -->
+    <div id="in-app-warning" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6 hidden transition-all duration-300">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden animate-[bounce_1s_ease-in-out]">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-pink-500 to-orange-500"></div>
+            <div class="w-20 h-20 bg-pink-50 text-pink-500 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner border border-pink-100">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">กรุณาเปิดในเบราว์เซอร์หลัก</h2>
+            <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+                ระบบจะไม่สามารถทำงานได้ หากเปิดผ่านแอปพลิเคชัน LINE หรือ Facebook<br><br>
+                ให้สังเกตเมนู <b>"จุด 3 จุด"</b> หรือไอคอนแชร์<br>(อยู่บริเวณ <b>มุมขวาบน หรือ มุมขวาล่าง</b>)
+            </p>
+            <div class="space-y-3 text-left bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm mb-6 shadow-inner">
+                <div class="flex items-center"><i class="fa-brands fa-android text-green-500 text-xl w-8 text-center"></i> <b class="mr-1">Android:</b> เปิดในเบราว์เซอร์เริ่มต้น</div>
+                <div class="flex items-center"><i class="fa-brands fa-apple text-slate-800 text-xl w-8 text-center"></i> <b class="mr-1">iPhone:</b> เปิดใน Safari</div>
+            </div>
+            <button onclick="document.getElementById('in-app-warning').classList.add('hidden')" class="w-full bg-slate-200 text-slate-600 py-3 rounded-xl text-sm font-bold hover:bg-slate-300 transition shadow">
+                ฉันเข้าใจแล้ว (ปิดหน้าต่างนี้)
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: ประวัติประกาศทั้งหมด -->
+    <div id="history-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col transform scale-95 transition-all overflow-hidden" id="history-modal-content">
+            <div class="bg-orange-500 p-5 text-white flex justify-between items-center">
+                <h2 class="text-lg font-bold flex items-center"><i class="fa-solid fa-clock-rotate-left mr-2"></i> ประวัติประกาศทั้งหมด</h2>
+                <button onclick="closeHistoryModal()" class="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-full"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-grow bg-slate-50">
+                <div id="history-list" class="space-y-4">
+                    <p class="text-center text-slate-400 py-4">กำลังโหลดข้อมูล...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col transform scale-95 transition-all overflow-hidden" id="admin-modal-content">
+            <div class="bg-slate-800 p-6 text-white flex justify-between items-center">
+                <h2 class="text-xl font-bold flex items-center"><i class="fa-solid fa-gear mr-3"></i> ระบบจัดการฐานข้อมูลแอป</h2>
+                <button onclick="closeAdminModal()" class="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-full"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-8 overflow-y-auto flex-grow flex flex-col lg:flex-row gap-8 custom-scrollbar">
+                <!-- Form -->
+                <div class="w-full lg:w-5/12 bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4 shadow-inner text-sm">
+                    <h3 id="form-title" class="font-bold text-slate-700">เพิ่มรายการใหม่</h3>
+                    <input type="hidden" id="edit-id">
+                    <input type="text" id="app-name" placeholder="ชื่อแอป (เช่น Productivity & สถานการณ์เตียง)" class="w-full p-3 border rounded-xl outline-none focus:border-pink-500 shadow-sm">
+                    <textarea id="app-desc" rows="2" placeholder="คำอธิบายสั้นๆ" class="w-full p-3 border rounded-xl outline-none focus:border-pink-500 shadow-sm"></textarea>
+                    <select id="app-category" class="w-full p-3 border rounded-xl outline-none bg-white shadow-sm">
+                        <option value="งานบริหาร">งานบริหาร</option>
+                        <option value="งานคลินิก">งานคลินิก</option>
+                        <option value="Productivity">Productivity & สถานการณ์เตียง</option>
+                        <option value="แบบฟอร์ม">แบบฟอร์ม</option>
+                        <option value="อื่นๆ">อื่นๆ</option>
+                    </select>
+                    <input type="text" id="app-url" placeholder="ลิงก์ URL แอป" class="w-full p-3 border rounded-xl outline-none focus:border-pink-500 shadow-sm">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-2 bg-white rounded-xl border">
+                            <label class="text-[10px] font-bold text-slate-400 block mb-2 uppercase tracking-tighter">เลือกไอคอน</label>
+                            <div id="icon-picker" class="grid grid-cols-4 gap-2 h-24 overflow-y-auto custom-scrollbar"></div>
+                            <input type="hidden" id="selected-icon" value="fa-solid fa-hospital">
+                        </div>
+                        <div class="p-2 bg-white rounded-xl border">
+                            <label class="text-[10px] font-bold text-slate-400 block mb-2 uppercase tracking-tighter">เลือกสี</label>
+                            <div id="color-picker" class="grid grid-cols-2 gap-2 h-24 overflow-y-auto custom-scrollbar"></div>
+                            <input type="hidden" id="selected-color" value="from-pink-500 to-rose-600">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 block mb-2 uppercase tracking-tighter">ป้ายกำกับ (Badge)</label>
+                        <div id="badge-picker" class="flex flex-wrap gap-2"></div>
+                        <input type="hidden" id="selected-badge" value="">
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="saveApp()" id="save-btn" class="flex-grow bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700 transition shadow-lg active:scale-95">บันทึกข้อมูล</button>
+                        <button onclick="resetForm()" class="px-4 bg-slate-200 rounded-xl hover:bg-slate-300 transition shadow">ล้าง</button>
+                    </div>
+                </div>
+                <!-- Admin List -->
+                <div class="w-full lg:w-7/12">
+                    <div class="flex justify-between mb-4"><h3 class="font-bold text-slate-700">แอปที่มีอยู่ (<span id="count-apps">0</span>)</h3></div>
+                    <div id="admin-app-list" class="space-y-3 custom-scrollbar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line Modal -->
+    <div id="line-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col transform scale-95 transition-all">
+            <div class="bg-green-600 p-5 text-white flex justify-between items-center"><h2 class="font-bold"><i class="fa-solid fa-bullhorn mr-2"></i>ระบบประกาศข้อความ</h2><button onclick="toggleLineModal()"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="p-8 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <select id="line-topic-type" class="w-full p-3 border-2 rounded-xl">
+                        <option value="📢 แจ้งอัปเดตระบบ">📢 แจ้งอัปเดตระบบ</option>
+                        <option value="✨ เพิ่มฟีเจอร์ใหม่">✨ เพิ่มฟีเจอร์ใหม่</option>
+                        <option value="📌 แจ้งเรื่องทั่วไป">📌 แจ้งเรื่องทั่วไป</option>
+                        <option value="🎉 เทศกาล / กิจกรรม">🎉 เทศกาล / กิจกรรม</option>
+                        <option value="💬 อื่นๆ">💬 อื่นๆ</option>
+                    </select>
+                    <select id="line-app-select" class="w-full p-3 border-2 rounded-xl">
+                        <option value="">-- ไม่ระบุเว็บแอป (ประกาศทั่วไป) --</option>
+                    </select>
+                </div>
+                <textarea id="line-detail" rows="3" placeholder="รายละเอียดประกาศ..." class="w-full p-3 border-2 rounded-xl outline-none focus:border-green-500 shadow-sm"></textarea>
+                
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="generateLineMessage()" class="col-span-3 sm:col-span-1 bg-slate-800 text-white py-3 rounded-xl hover:bg-black transition font-bold text-sm shadow">1. ดูตัวอย่างข้อความ</button>
+                    <button onclick="copyLineMessage()" class="col-span-3 sm:col-span-1 bg-green-500 text-white py-3 rounded-xl hover:bg-green-600 transition font-bold text-sm shadow"><i class="fa-regular fa-copy mr-1"></i> 2. คัดลอกส่ง LINE</button>
+                    <button onclick="updateMarquee(event)" class="col-span-3 sm:col-span-1 bg-orange-500 text-white py-3 rounded-xl hover:bg-orange-600 transition font-bold text-sm shadow border border-orange-400"><i class="fa-solid fa-satellite-dish mr-1"></i> 3. อัปเดตขึ้นเว็บ</button>
+                </div>
+
+                <button onclick="clearMarquee(event)" class="w-full bg-red-50 text-red-600 py-2 rounded-xl hover:bg-red-100 transition font-bold text-xs mt-2 border border-red-200">
+                    <i class="fa-solid fa-eraser mr-1"></i> ล้างประวัติประกาศทั้งหมด
+                </button>
+
+                <div class="mt-4 border-t pt-4">
+                    <p class="text-xs text-slate-500 font-bold mb-2">ตัวอย่างข้อความ:</p>
+                    <textarea id="line-preview" class="w-full h-32 bg-slate-50 p-3 text-xs rounded-xl outline-none resize-none shadow-inner" readonly></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuZeaqlOxnVVzWKqgB49lEsb9Hc4MHYd5XFAHJNu-2bNn5S_CduRoA_S1GGUyaZm4U/exec";
+        let globalAppsList = [];
+        let globalAnnouncements = [];
+        let currentCategory = 'all';
+
+        const icons = ["fa-solid fa-hospital", "fa-solid fa-user-nurse", "fa-solid fa-stethoscope", "fa-solid fa-clipboard-list", "fa-solid fa-heart-pulse", "fa-solid fa-pills", "fa-solid fa-calendar-check", "fa-solid fa-file-medical", "fa-solid fa-calculator", "fa-solid fa-chart-line", "fa-solid fa-boxes-stacked", "fa-solid fa-robot"];
+        const colorThemes = [{ class: "from-pink-500 to-rose-600" }, { class: "from-teal-500 to-cyan-600" }, { class: "from-blue-500 to-indigo-600" }, { class: "from-orange-500 to-red-600" }, { class: "from-purple-500 to-pink-600" }, { class: "from-emerald-500 to-teal-600" }];
+        const badges = [{ l: 'ไม่มี', v: '' }, { l: 'NEW', v: 'NEW' }, { l: 'อัปเดต', v: 'อัปเดต' }, { l: 'สำคัญ', v: 'สำคัญ' }, { l: 'ปิดปรับปรุง', v: 'ปิดปรับปรุง' }];
+
+        function checkInAppBrowser() {
+            const ua = navigator.userAgent || navigator.vendor || window.opera;
+            if (ua.indexOf('Line') > -1 || ua.indexOf('FBAV') > -1 || ua.indexOf('FBAN') > -1) {
+                document.getElementById('in-app-warning').classList.remove('hidden');
+            }
+        }
+
+        function selectIcon(icon, el) {
+            document.querySelectorAll('.icon-select').forEach(e => e.classList.remove('selected', 'border-pink-500'));
+            el.classList.add('selected', 'border-pink-500');
+            document.getElementById('selected-icon').value = icon;
+        }
+
+        function selectColor(color, el) {
+            document.querySelectorAll('.color-select').forEach(e => e.classList.remove('selected', 'border-white'));
+            el.classList.add('selected', 'border-white');
+            document.getElementById('selected-color').value = color;
+        }
+
+        function selectBadge(value, el) {
+            document.querySelectorAll('.badge-select').forEach(e => e.classList.remove('selected', 'bg-pink-500', 'text-white'));
+            el.classList.add('selected', 'bg-pink-500', 'text-white');
+            document.getElementById('selected-badge').value = value;
+        }
+
+        function initPickers() {
+            const iconDiv = document.getElementById('icon-picker');
+            icons.forEach(i => {
+                const d = document.createElement('div');
+                d.className = "icon-select cursor-pointer h-8 bg-slate-100 rounded flex items-center justify-center hover:bg-pink-50 border-2 border-transparent transition shadow-sm";
+                d.innerHTML = `<i class="${i} text-sm"></i>`;
+                d.onclick = () => selectIcon(i, d);
+                iconDiv.appendChild(d);
+            });
+            const colorDiv = document.getElementById('color-picker');
+            colorThemes.forEach(t => {
+                const d = document.createElement('div');
+                d.className = `color-select cursor-pointer h-8 rounded bg-gradient-to-r ${t.class} border-2 border-transparent transition shadow-sm`;
+                d.onclick = () => selectColor(t.class, d);
+                colorDiv.appendChild(d);
+            });
+            const badgeDiv = document.getElementById('badge-picker');
+            badges.forEach(b => {
+                const btn = document.createElement('button');
+                btn.className = "badge-select px-3 py-1 border-2 rounded-lg text-[10px] font-bold text-slate-500 transition shadow-sm hover:border-pink-400";
+                btn.textContent = b.l;
+                btn.onclick = () => selectBadge(b.v, btn);
+                badgeDiv.appendChild(btn);
+                if (b.v === '') btn.classList.add('bg-pink-500','text-white');
+            });
+        }
+
+        function filterByCategory(cat, el) {
+            currentCategory = cat;
+            document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active', 'bg-pink-600', 'text-white'));
+            if (el) el.classList.add('active', 'bg-pink-600', 'text-white');
+            renderMainGrid();
+        }
+
+        function filterApps() { renderMainGrid(); }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('real-time-clock').textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+            const m = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            document.getElementById('real-time-date').textContent = `${now.getDate()} ${m[now.getMonth()]} ${now.getFullYear()+543}`;
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        function formatDateTime(isoString) {
+            if (!isoString) return '';
+            const d = new Date(isoString);
+            return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543} เวลา ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.`;
+        }
+
+        async function fetchAppsData() {
+            try {
+                const noCacheUrl = GOOGLE_SCRIPT_URL + "?t=" + new Date().getTime();
+                const res = await fetch(noCacheUrl);
+                const data = await res.json();
+                
+                if (Array.isArray(data)) {
+                    globalAppsList = data;
+                } else {
+                    globalAppsList = data.apps || [];
+                    globalAnnouncements = data.announcements || [];
+                    
+                    const defaultWelcome = "กลุ่มการพยาบาล รพ.โพธาราม ยินดีต้อนรับ | ";
+                    let dynamicAnnouncement = "";
+                    
+                    if (globalAnnouncements.length > 0) {
+                        const top3 = globalAnnouncements.slice(0, 3).map(a => a.text).join("  •  ");
+                        dynamicAnnouncement = `🔥 อัปเดตล่าสุด: ${top3}`;
+                    } else {
+                        dynamicAnnouncement = "ไม่มีประกาศใหม่ในขณะนี้";
+                    }
+                    
+                    document.getElementById('marquee-text').textContent = defaultWelcome + dynamicAnnouncement;
+                    renderHistoryList();
+                }
+                
+                // Auto-rename
+                globalAppsList = globalAppsList.map(app => ({
+                    ...app,
+                    name: app.name.replace(/อัตราครองเตียง/g, 'สถานการณ์เตียง')
+                }));
+                
+                renderMainGrid();
+                renderAdminAppList();
+                document.getElementById('count-apps').textContent = globalAppsList.length;
+            } catch (err) { 
+                console.error(err); 
+                document.getElementById('app-grid').innerHTML = `
+                    <div class="col-span-full text-center py-20 text-red-500">
+                        <i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i>
+                        <p>เชื่อมต่อฐานข้อมูลไม่สำเร็จ</p>
+                    </div>`;
+            }
+        }
+
+        function renderHistoryList() {
+            const list = document.getElementById('history-list');
+            if (globalAnnouncements.length === 0) {
+                list.innerHTML = '<p class="text-center text-slate-400 py-4">ยังไม่มีประวัติประกาศ</p>';
+                return;
+            }
+            
+            list.innerHTML = '';
+            globalAnnouncements.forEach((ann, index) => {
+                const isLatest = index === 0 ? 'border-orange-400 bg-orange-50' : 'border-slate-200 bg-white';
+                const badge = index === 0 ? '<span class="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full ml-2">ล่าสุด</span>' : '';
+                
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="p-4 rounded-xl border ${isLatest} shadow-sm text-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1"></i> ${formatDateTime(ann.date)}</span>
+                            ${badge}
+                        </div>
+                        <p class="font-medium text-slate-800 leading-relaxed">${ann.text}</p>
+                    </div>
+                `);
+            });
+        }
+
+        function openHistoryModal() { 
+            const m = document.getElementById('history-modal');
+            m.classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('history-modal-content').classList.remove('scale-95');
+        }
+        function closeHistoryModal() { 
+            const m = document.getElementById('history-modal');
+            m.classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('history-modal-content').classList.add('scale-95');
+        }
+
+        function renderMainGrid() {
+            const grid = document.getElementById('app-grid');
+            const search = document.getElementById('app-search').value.toLowerCase();
+            grid.innerHTML = '';
+            
+            if (currentCategory === 'แบบฟอร์ม') {
+                grid.className = 'flex flex-col gap-4 mb-16';
+            } else {
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16';
+            }
+            
+            const filtered = globalAppsList.filter(app => {
+                const matchSearch = app.name.toLowerCase().includes(search);
+                const matchCat = currentCategory === 'all' || app.category === currentCategory;
+                return matchSearch && matchCat;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-16 text-slate-400">
+                    <i class="fa-solid fa-box-open text-4xl mb-3"></i>
+                    <p>ไม่พบแอปในหมวดนี้</p>
+                </div>`;
+                return;
+            }
+
+            filtered.forEach(app => {
+                let badgeClass = "bg-red-500";
+                if (app.badge === 'อัปเดต') badgeClass = "bg-blue-500";
+                if (app.badge === 'สำคัญ') badgeClass = "bg-amber-500";
+                if (app.badge === 'ปิดปรับปรุง') badgeClass = "bg-slate-500";
+                const badge = app.badge ? `<span class="${badgeClass} text-white text-[10px] font-bold px-2 py-1 rounded-full blink-text uppercase shadow-sm">${app.badge}</span>` : '';
+                
+                if (currentCategory === 'แบบฟอร์ม') {
+                    grid.insertAdjacentHTML('beforeend', `
+                        <div class="app-card bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 flex flex-row items-center p-4 hover:shadow-md transition">
+                            <div class="w-16 h-16 rounded-xl bg-gradient-to-br ${app.color} flex-shrink-0 flex items-center justify-center text-white text-2xl mr-4 shadow-inner">
+                                <i class="${app.icon}"></i>
+                            </div>
+                            <div class="flex-grow flex flex-col justify-center min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h3 class="text-lg font-bold text-slate-800 truncate">${app.name}</h3>
+                                    ${badge}
+                                </div>
+                                <p class="text-slate-500 text-xs truncate">${app.description || '-'}</p>
+                            </div>
+                            <div class="ml-4 flex-shrink-0">
+                                <a href="${app.url}" target="_blank" class="px-5 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-pink-600 transition shadow active:scale-95">กรอกข้อมูล</a>
+                            </div>
+                        </div>
+                    `);
+                } else {
+                    grid.insertAdjacentHTML('beforeend', `
+                        <div class="app-card bg-white rounded-[2rem] overflow-hidden shadow-sm border border-slate-100 flex flex-col h-full hover:shadow-xl">
+                            <div class="h-24 bg-gradient-to-br ${app.color} flex items-center justify-center text-white text-4xl"><i class="${app.icon}"></i></div>
+                            <div class="p-6 flex-grow flex flex-col">
+                                <div class="flex justify-between items-start mb-2 gap-2"><h3 class="text-lg font-bold text-slate-800 leading-tight">${app.name}</h3>${badge}</div>
+                                <p class="text-slate-500 text-xs mb-4 flex-grow line-clamp-2">${app.description || '-'}</p>
+                                <a href="${app.url}" target="_blank" class="w-full text-center bg-slate-900 text-white py-3 rounded-2xl text-sm font-bold hover:bg-pink-600 transition shadow-lg active:scale-95">เปิดใช้งาน</a>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        function renderAdminAppList() {
+            const list = document.getElementById('admin-app-list');
+            list.innerHTML = '';
+            globalAppsList.forEach(app => {
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 hover:border-pink-200 transition shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded bg-gradient-to-br ${app.color} flex items-center justify-center text-white text-xs shadow-inner"><i class="${app.icon}"></i></div>
+                            <div><p class="font-bold text-xs text-slate-800 truncate max-w-[120px]">${app.name}</p><p class="text-[8px] text-slate-400 font-mono italic">${app.category || 'ไม่มีหมวด'}</p></div>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editApp('${app.id}')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteApp('${app.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        async function saveApp() {
+            const btn = document.getElementById('save-btn');
+            const editId = document.getElementById('edit-id').value;
+            
+            const data = {
+                action: editId ? 'edit' : 'add',
+                id: editId,
+                name: document.getElementById('app-name').value.trim(),
+                description: document.getElementById('app-desc').value.trim(),
+                category: document.getElementById('app-category').value,
+                url: document.getElementById('app-url').value.trim(),
+                icon: document.getElementById('selected-icon').value,
+                color: document.getElementById('selected-color').value,
+                badge: document.getElementById('selected-badge').value
+            };
+            
+            if(!data.name || !data.url) return alert('กรุณากรอกชื่อและลิงก์');
+            
+            btn.disabled = true; 
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังบันทึก...';
+            
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(data) 
+                });
+                
+                alert('ข้อมูลถูกอัปเดตเรียบร้อยแล้ว'); 
+                closeAdminModal(); 
+                setTimeout(fetchAppsData, 1500);
+            } catch (err) {
+                console.error(err);
+                alert('การเชื่อมต่อมีปัญหา');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'บันทึกข้อมูล';
+            }
+        }
+
+        async function deleteApp(id) { 
+            if(confirm('ยืนยันการลบแอปนี้?')) { 
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, { 
+                        method: 'POST', 
+                        mode: 'no-cors', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'delete', id: id }) 
+                    }); 
+                    alert('ลบข้อมูลเรียบร้อยแล้ว');
+                    setTimeout(fetchAppsData, 1500); 
+                } catch(e) {
+                    alert('เกิดข้อผิดพลาดในการลบ');
+                }
+            } 
+        }
+
+        function editApp(id) {
+            const app = globalAppsList.find(a => a.id === id);
+            if(!app) return;
+            
+            document.getElementById('form-title').innerHTML = '<i class="fa-solid fa-pen-to-square text-blue-500 mr-2"></i> แก้ไขข้อมูลแอป';
+            document.getElementById('edit-id').value = app.id;
+            document.getElementById('app-name').value = app.name;
+            document.getElementById('app-desc').value = app.description || '';
+            document.getElementById('app-category').value = app.category || 'งานบริหาร';
+            document.getElementById('app-url').value = app.url;
+            
+            // Reset selections
+            document.querySelectorAll('.icon-select').forEach(el => el.classList.remove('selected', 'border-pink-500'));
+            document.querySelectorAll('.color-select').forEach(el => el.classList.remove('selected', 'border-white'));
+            document.querySelectorAll('.badge-select').forEach(el => el.classList.remove('selected', 'bg-pink-500', 'text-white'));
+            
+            // Select current
+            document.querySelectorAll('.icon-select').forEach(el => { 
+                if(el.querySelector('i').className.includes(app.icon)) {
+                    selectIcon(app.icon, el);
+                }
+            });
+            document.querySelectorAll('.color-select').forEach(el => { 
+                if(el.className.includes(app.color.split(' ')[0])) {
+                    selectColor(app.color, el);
+                }
+            });
+            document.querySelectorAll('.badge-select').forEach(el => { 
+                if(el.textContent === (app.badge || 'ไม่มี')) {
+                    selectBadge(app.badge || '', el);
+                }
+            });
+        }
+
+        function resetForm() { 
+            document.getElementById('form-title').innerHTML = 'เพิ่มรายการใหม่';
+            document.getElementById('edit-id').value = ""; 
+            document.getElementById('app-name').value = ""; 
+            document.getElementById('app-desc').value = ""; 
+            document.getElementById('app-url').value = ""; 
+            
+            // Reset pickers
+            document.querySelectorAll('.icon-select').forEach(el => el.classList.remove('selected', 'border-pink-500'));
+            document.querySelectorAll('.color-select').forEach(el => el.classList.remove('selected', 'border-white'));
+            document.querySelectorAll('.badge-select').forEach(el => el.classList.remove('selected', 'bg-pink-500', 'text-white'));
+            document.querySelector('.badge-select')?.classList.add('bg-pink-500','text-white');
+            document.getElementById('selected-icon').value = "fa-solid fa-hospital";
+            document.getElementById('selected-color').value = "from-pink-500 to-rose-600";
+            document.getElementById('selected-badge').value = "";
+        }
+        
+        function openAdminModal() { 
+            document.getElementById('admin-modal').classList.remove('opacity-0', 'pointer-events-none'); 
+            document.getElementById('admin-modal-content').classList.remove('scale-95'); 
+        }
+        function closeAdminModal() { 
+            document.getElementById('admin-modal').classList.add('opacity-0', 'pointer-events-none'); 
+            document.getElementById('admin-modal-content').classList.add('scale-95'); 
+            resetForm(); 
+        }
+        
+        function toggleLineModal() { 
+            const m = document.getElementById('line-modal'); 
+            m.classList.toggle('opacity-0'); 
+            m.classList.toggle('pointer-events-none'); 
+            populateAppDropdown(); 
+        }
+        
+        function populateAppDropdown() { 
+            const s = document.getElementById('line-app-select'); 
+            s.innerHTML = '<option value="">-- ไม่ระบุเว็บแอป (ประกาศทั่วไป) --</option>'; 
+            globalAppsList.forEach(a => s.insertAdjacentHTML('beforeend', `<option value="${a.name}">${a.name}</option>`)); 
+        }
+        
+        function generateLineMessage() {
+            const t = document.getElementById('line-topic-type').value;
+            const a = document.getElementById('line-app-select').value;
+            const d = document.getElementById('line-detail').value.trim();
+            
+            let msg = `📢 [แจ้งข่าวสาร NSO Photharam] 📢\n\n${t}\n`;
+            if (a) msg += `📱 ระบบ: ${a}\n`;
+            if (d) msg += `📝 รายละเอียด:\n${d}\n`;
+            msg += `\n------------------------------\n🏥 ศูนย์รวมเว็บแอป NSO Photharam:\n👉 https://gemini.google.com/share/NSO-Hub`;
+            
+            document.getElementById('line-preview').value = msg;
+        }
+        
+        async function copyLineMessage() { 
+            const p = document.getElementById('line-preview'); 
+            if(!p.value.includes('แจ้งข่าวสาร')) {
+                generateLineMessage();
+            }
+            
+            try {
+                await navigator.clipboard.writeText(p.value);
+                alert('คัดลอกข้อความแล้ว นำไปวางใน LINE ได้เลย!');
+            } catch (err) {
+                // Fallback
+                p.select();
+                document.execCommand('copy');
+                alert('คัดลอกข้อความแล้ว นำไปวางใน LINE ได้เลย!');
+            }
+        }
+
+        async function updateMarquee(event) {
+            const t = document.getElementById('line-topic-type').value;
+            const a = document.getElementById('line-app-select').value;
+            const d = document.getElementById('line-detail').value.trim();
+            
+            let customText = `${t}`;
+            if (a) customText += ` [${a}]`;
+            if (d) customText += ` : ${d}`;
+
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังอัปเดต...';
+            btn.disabled = true;
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'update_announcement', text: customText })
+                });
+                alert('✅ อัปเดตตัวหนังสือวิ่งเรียบร้อยแล้ว');
+                toggleLineModal();
+                setTimeout(fetchAppsData, 1500); 
+            } catch (err) {
+                console.error(err);
+                alert('❌ เกิดข้อผิดพลาดในการอัปเดตประกาศ');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function clearMarquee(event) {
+            if(!confirm('คำเตือน: คุณต้องการลบประวัติประกาศทั้งหมดทิ้งใช่หรือไม่?')) return;
+            
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังลบ...';
+            btn.disabled = true;
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'clear_announcement' })
+                });
+                alert('✅ ล้างประวัติประกาศเรียบร้อยแล้ว');
+                toggleLineModal();
+                setTimeout(fetchAppsData, 1500); 
+            } catch (err) {
+                console.error(err);
+                alert('❌ เกิดข้อผิดพลาดในการลบประกาศ');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initPickers();
+            fetchAppsData();
+            checkInAppBrowser();
+        });
+    </script>
+</body>
+</html>
